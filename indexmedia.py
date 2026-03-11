@@ -196,17 +196,15 @@ class Indexer(object):
         if not album:
             results = self.discogsclient.search(artist=normalize_name(artist), track=normalize_name(tinfo.title,True), type='release')
         else:
-            results = self.discogsclient.search(artist=normalize_name(artist), track=normalize_name(tinfo.title,True),title=normalize_name(tinfo.album,True), type='release')
-        if results.count == 0:
-            results = self.discogsclient.search(normalize_name(tinfo.album), artist=normalize_name(artist),
-                                                type='release')
-        if results.count == 0 and tinfo.year:
-            results = self.discogsclient.search(normalize_name(tinfo.album,True), artist=normalize_name(tinfo.artist),
-                                            year=tinfo.year,type='release')
+            results = self.discogsclient.search(artist=normalize_name(artist),track=normalize_name(tinfo.title,True),title=normalize_name(tinfo.album,True), type='release')
             if results.count == 0:
-                results = self.discogsclient.search(track=normalize_name(tinfo.title,True), year=tinfo.year, artist=normalize_name(tinfo.artist),type='release')
+                results = self.discogsclient.search(artist=normalize_name(artist),title=normalize_name(tinfo.album), type='release')
+            if results.count == 0 and tinfo.year:
+                results = self.discogsclient.search(artist=normalize_name(artist),title=normalize_name(tinfo.album,True), year=tinfo.year,type='release')
                 if results.count == 0:
-                    return None
+                    results = self.discogsclient.search(track=normalize_name(tinfo.title,True), year=tinfo.year, artist=normalize_name(artist),type='release')
+        if results.count == 0:
+            return None
         return results
 
 
