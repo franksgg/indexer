@@ -6,6 +6,7 @@ import re
 import sys
 import traceback
 from configparser import ConfigParser
+
 from io import BytesIO
 from typing import Optional
 
@@ -85,7 +86,9 @@ class Indexer(object):
         self.discogsinfo = self.discogsinfo()
         self.session.mount("file://", FileAdapter())
         self.fullscan = False
+        self.clean = False
         self.start = None
+        self.startpath = ""
         self.file_path = ""
         self.formats = ("flac", "mp3", "m4a")
         self.id3r = None
@@ -94,6 +97,8 @@ class Indexer(object):
         self.media_dirs = ()
         self.mybase = ""
         self.albuminfo = None
+        self.con = None
+        self.discogsclient = None
 
         self._artist_cache = {}
         self._album_cache = {}
@@ -109,7 +114,7 @@ class Indexer(object):
 
         try:
             # Set up database connections
-            print("Connecting to database",file=self.logfile)
+            print("Connecting to database", file=self.logfile)
             connection = connector.Connector()
             self.con = connection.getconnection()
             self._cur = self.con.cursor()
@@ -117,36 +122,52 @@ class Indexer(object):
 
             self.discogsclient = discogs_client.Client('indexmedia/0.1', user_token=discogs_key)
 
-            self.formats = config.get("Indexer", "formats")
+            formats_value = config.get("Indexer", "formats")
+            self.formats = tuple(
+                fmt.strip().lower().lstrip(".")
+                for fmt in formats_value.split(",")
+                if fmt.strip()
+            ) or self.formats
+
             # Get media directories
             self.mybase = os.path.normpath(config.get("Indexer", "basedir"))
-            mypath =  os.path.join(self.mybase , os.path.normpath(config.get("Indexer", "dir")))
-            startpath=os.path.normpath(config.get("Indexer", "startdir"))
+            mypath = os.path.join(self.mybase, os.path.normpath(config.get("Indexer", "dir")))
+            startpath = os.path.normpath(config.get("Indexer", "startdir"))
             if startpath == ".":
                 self.startpath = mypath
             else:
-                self.startpath = os.path.join(mypath , startpath)
+                self.startpath = os.path.join(mypath, startpath)
             self.media_dirs = (mypath,)
             # Get other configuration options
             self.fullscan = config.getboolean("Indexer", "fullscan")
             self.clean = config.getboolean("Indexer", "cleanup")
-
 
             # Validate configuration
             if len(self.media_dirs) == 0:
                 print("Remember to set the MEDIA_DIRS option, otherwise I don't know where to look for.", file=self.logfile)
 
         except Exception as e:
-            print(f"Error during initialization: {e}",file=self.logfile)
-            # Ensure we have default values even if configuration fails
-            if not hasattr(self, "media_dirs") or not self.media_dirs:
+            print(f"Error during initialization: {e}", file=self.logfile)
+            if not self.media_dirs:
                 self.media_dirs = ()
-            if not hasattr(self, "startpath"):
+            if not self.startpath:
                 self.startpath = ""
 
+    # ... existing code ...
+
     def fill_discogs(self, tinfo):
-        if tinfo.artist and tinfo.album:
-            cache_key = (tinfo.artist, tinfo.album)
+        self.discogsinfo.album = None
+        self.discogsinfo.albumimage = None
+        self.discogsinfo.artist = None
+        self.discogsinfo.artistimage = None
+
+        track_artist = getattr(tinfo, "artist", None)
+        track_album = getattr(tinfo, "album", None)
+        track_title = getattr(tinfo, "title", None)
+        album_artist = getattr(tinfo, "albumartist", None)
+
+        if track_artist and track_album:
+            cache_key = (track_artist, track_album)
             if cache_key in self._discogs_cache:
                 cached = self._discogs_cache[cache_key]
                 if cached:
@@ -156,57 +177,83 @@ class Indexer(object):
                     self.discogsinfo.artistimage = cached['artistimage']
                 return None
         else:
-            cache_key = (tinfo.artist, tinfo.title)
+            cache_key = (track_artist, track_title)
 
-        if tinfo.albumartist:
-            artist=tinfo.albumartist
-        else:
-            artist=tinfo.artist
+        artist = album_artist or track_artist
+        if not artist or not track_title or self.discogsclient is None:
+            self._discogs_cache[cache_key] = None
+            return None
+
         results = self.search_discogs(artist, tinfo)
         if results is not None:
-                p = results.page(1)
-                for release in p:
-                    try:
-                        if release.images:
-                            self.discogsinfo.album = release
-                            self.discogsinfo.albumimage = release.images[0]['uri']
-                            self.discogsinfo.artist = release.artists
-                            for artist in self.discogsinfo.artist:
-                                if artist.images:
-                                    self.discogsinfo.artistimage = artist.images[0]['uri']
-                                    self._discogs_cache[cache_key] = {'album': self.discogsinfo.album,
-                                        'albumimage': self.discogsinfo.albumimage, 'artist': self.discogsinfo.artist,
-                                        'artistimage': self.discogsinfo.artistimage}
-                                    return None
-                    except Exception as e:
-                        print(f"Error getting discogs info: {e}",file=self.logfile)
-                        pass
-        else:
-            self.discogsinfo.album = None
-            self.discogsinfo.albumimage = None
-            self.discogsinfo.artist = None
-            self.discogsinfo.artistimage = None
-            self.discogsinfo.albumimage = None
+            p = results.page(1)
+            for release in p:
+                try:
+                    if release.images:
+                        self.discogsinfo.album = release
+                        self.discogsinfo.albumimage = release.images[0]['uri']
+                        self.discogsinfo.artist = release.artists
+                        for release_artist in self.discogsinfo.artist:
+                            if release_artist.images:
+                                self.discogsinfo.artistimage = release_artist.images[0]['uri']
+                                self._discogs_cache[cache_key] = {
+                                    'album': self.discogsinfo.album,
+                                    'albumimage': self.discogsinfo.albumimage,
+                                    'artist': self.discogsinfo.artist,
+                                    'artistimage': self.discogsinfo.artistimage,
+                                }
+                                return None
+                except Exception as e:
+                    print(f"Error getting discogs info: {e}", file=self.logfile)
         self._discogs_cache[cache_key] = None
-
         return None
 
-    def search_discogs(self, artist, tinfo) -> MixedPaginatedList:
-        album=tinfo.album
-        if not album:
-            results = self.discogsclient.search(artist=normalize_name(artist), track=normalize_name(tinfo.title,True), type='release')
-        else:
-            results = self.discogsclient.search(artist=normalize_name(artist),track=normalize_name(tinfo.title,True),title=normalize_name(tinfo.album,True), type='release')
-            if results.count == 0:
-                results = self.discogsclient.search(artist=normalize_name(artist),title=normalize_name(tinfo.album), type='release')
-            if results.count == 0 and tinfo.year:
-                results = self.discogsclient.search(artist=normalize_name(artist),title=normalize_name(tinfo.album,True), year=tinfo.year,type='release')
-                if results.count == 0:
-                    results = self.discogsclient.search(track=normalize_name(tinfo.title,True), year=tinfo.year, artist=normalize_name(artist),type='release')
-        if results.count == 0:
+    def search_discogs(self, artist, tinfo) -> Optional[MixedPaginatedList]:
+        if self.discogsclient is None:
             return None
-        return results
 
+        album = getattr(tinfo, "album", None)
+        title = getattr(tinfo, "title", None)
+        year = getattr(tinfo, "year", None)
+
+        if not artist or not title:
+            return None
+
+        if not album:
+            results = self.discogsclient.search(
+                artist=normalize_name(artist),
+                track=normalize_name(title, True),
+                type='release'
+            )
+        else:
+            results = self.discogsclient.search(
+                artist=normalize_name(artist),
+                track=normalize_name(title, True),
+                title=normalize_name(album, True),
+                type='release'
+            )
+            if results.count == 0:
+                results = self.discogsclient.search(
+                    artist=normalize_name(artist),
+                    title=normalize_name(album),
+                    type='release'
+                )
+            if results.count == 0 and year:
+                results = self.discogsclient.search(
+                    artist=normalize_name(artist),
+                    title=normalize_name(album, True),
+                    year=year,
+                    type='release'
+                )
+                if results.count == 0:
+                    results = self.discogsclient.search(
+                        track=normalize_name(title, True),
+                        year=year,
+                        artist=normalize_name(artist),
+                        type='release'
+                    )
+
+        return results if results.count > 0 else None
 
     def is_track(self):
         """Tries to guess whether the file is a valid track or not.
@@ -324,10 +371,10 @@ class Indexer(object):
     def parsealbuminfo(self, albuminfo_path):
         """
         Read album information from the given file and store it in a dictionary.
-        
+
         Args:
             albuminfo_path (pathlib.Path): Path to the AlbumInfo.txt file
-            
+
         Returns:
             dict: Dictionary containing the album information
         """
@@ -390,11 +437,11 @@ class Indexer(object):
     def writealbuminfo(self, album_info, albuminfo_path):
         """
         Write album information to the given file.
-        
+
         Args:
             album_info (dict): Dictionary containing the album information
             albuminfo_path (pathlib.Path): Path to the AlbumInfo.txt file
-            
+
         Returns:
             bool: True if successful, False otherwise
         """
@@ -426,7 +473,7 @@ class Indexer(object):
     def save_track(self, albuminfo):
         """
         Save track information to the database.
-        
+
         Args:
             albuminfo: Path to the AlbumInfo.txt file, or None if not available
         """
