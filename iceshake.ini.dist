@@ -1,6 +1,7 @@
 [Connection]
 ;firebird connection string
 host: fb
+port: 30050
 ;firebird database name
 database: /var/lib/firebird/data/iceshake.fdb
 ;firebird user

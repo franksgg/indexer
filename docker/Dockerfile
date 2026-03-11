@@ -90,7 +90,7 @@ RUN set -eux; \
 ENTRYPOINT ["entrypoint.sh"]
 
 
-EXPOSE 3050/tcp
+EXPOSE 30050/tcp
 # Fix terminfo location
 ENV TERMINFO=/lib/terminfo/
 

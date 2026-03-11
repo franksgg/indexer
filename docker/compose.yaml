@@ -19,7 +19,7 @@ services:
         aliases:
           - fb
     ports:
-      - "3050:3050"
+      - "30050:30050"
   python:
     build:
       context: ../

@@ -85,15 +85,18 @@ class Connector:
         self.fb_library_name = config.get('Connection', 'fb_library_name_w32' if sys.platform == 'win32' else 'fb_library_name')
         self.user = config.get('Connection', 'user')
         self.password = config.get('Connection', 'password')
-
+        try:
+             self.port = config.get('Connection', 'port')
+        except:
+            self.port = 3050
         # Initialize primary connection
         try:
             counter = 0
-            while not check_server(self.host, 3050) and not counter> 120:
+            while not check_server(self.host, self.port) and not counter> 120:
                 print("Waiting for primary database to start...")
                 counter += 1
                 time.sleep(10)
-            self.con = fdb.connect(host=self.host, database=self.database, user=self.user, password=self.password,
+            self.con = fdb.connect(host=self.host, port=self.port, database=self.database, user=self.user, password=self.password,
                                   fb_library_name=self.fb_library_name, charset='UTF-8')
         except Exception as e:
             print(f"Error connecting to primary database: {e}")
