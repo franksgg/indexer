@@ -79,7 +79,7 @@ class Indexer(object):
     def __init__(self):
         """Initialize the Indexer with configuration and connections."""
         # Initialize internal state
-        self.logfile = open('indexer.log', 'w')
+        self.logfile = open('indexer.log', 'a')
         print("Starting indexer", file=self.logfile)
         self.session = requests.Session()
         self.discogsinfo = self.discogsinfo()
@@ -105,7 +105,7 @@ class Indexer(object):
         config_files = ["/etc/iceshake/iceshake.ini", "iceshake.ini", "../iceshake.ini"]
         found_files = config.read(config_files)
         if not found_files:
-            print(f"Warning: None of the config files {config_files} were found.")
+            print(f"Warning: None of the config files {config_files} were found.", file=self.logfile)
 
         try:
             # Set up database connections
@@ -134,7 +134,7 @@ class Indexer(object):
 
             # Validate configuration
             if len(self.media_dirs) == 0:
-                print("Remember to set the MEDIA_DIRS option, otherwise I don't know where to look for.")
+                print("Remember to set the MEDIA_DIRS option, otherwise I don't know where to look for.", file=self.logfile)
 
         except Exception as e:
             print(f"Error during initialization: {e}",file=self.logfile)
@@ -279,12 +279,12 @@ class Indexer(object):
             return False
 
         def delentry(fname, row_id):
-            print('deleting ', row_id, fname,file=self.logfile)
+            print('deleting ', row_id, fname, file=self.logfile)
             delstmt = 'delete from tracks where id=%s' % (row_id)
             self._cur.execute(delstmt)
 
         self._cur.execute('select ID,PATH from tracks')
-        print('Checking ')
+        print('Checking ', file=self.logfile)
         c = 0
 
         tracks_to_check = self._cur.fetchall()
@@ -298,8 +298,8 @@ class Indexer(object):
                 c = c + 1
 
         self.con.commit()
-        print(c)
-        print('ok')
+        print(c, file=self.logfile)
+        print('ok', file=self.logfile)
 
     def run(self):
         """Main method to index media files and optionally retrieve missing images."""
@@ -309,7 +309,7 @@ class Indexer(object):
             # Process all media directories
             for mdir in self.media_dirs:
                 if not os.path.exists(mdir):
-                    print(f"Warning: Media directory {mdir} does not exist")
+                    print(f"Warning: Media directory {mdir} does not exist", file=self.logfile)
                     continue
                 print(f"Processing directory: {mdir}",file=self.logfile)
                 self.walk(mdir, None)
@@ -435,15 +435,15 @@ class Indexer(object):
         self.logfile.flush()
 
         if not self.fullscan and self.track_already_there(full_path):
-            print("Already there, skipping: ")
+            print("Already there, skipping: ", file=self.logfile)
             return
         else:
-            print("Analyzing track : ")
+            print("Analyzing track : ", file=self.logfile)
 
         try:
             tinfo = mediafile.MediaFile(full_path)
         except Exception as e:
-            print(f"Error reading media file {full_path}: {e}")
+            print(f"Error reading media file {full_path}: {e}", file=self.logfile)
             return
 
         self.fill_discogs(tinfo)
@@ -593,7 +593,7 @@ class Indexer(object):
         image = None
         try:
             for image in images:
-                print(image.mime_type)
+                print(image.mime_type, file=self.logfile)
                 break
         except:
             image = None
