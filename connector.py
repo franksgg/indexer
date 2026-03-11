@@ -86,7 +86,7 @@ class Connector:
         self.user = config.get('Connection', 'user')
         self.password = config.get('Connection', 'password')
         try:
-             self.port = config.get('Connection', 'port')
+             self.port = config.getint ('Connection', 'port')
         except:
             self.port = 3050
         # Initialize primary connection
