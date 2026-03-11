@@ -128,7 +128,6 @@ class Indexer(object):
                 for fmt in formats_value.split(",")
                 if fmt.strip()
             ) or self.formats
-
             # Get media directories
             self.mybase = os.path.normpath(config.get("Indexer", "basedir"))
             mypath = os.path.join(self.mybase, os.path.normpath(config.get("Indexer", "dir")))
@@ -148,6 +147,7 @@ class Indexer(object):
 
         except Exception as e:
             print(f"Error during initialization: {e}", file=self.logfile)
+            # Ensure we have default values even if configuration fails
             if not self.media_dirs:
                 self.media_dirs = ()
             if not self.startpath:
@@ -286,8 +286,8 @@ class Indexer(object):
                 if self.file_path == self.startpath:
                     self.start = True
                 if self.file_path == ignore:
-                    sys.stdout.write("ignored: " + dir_name + "\n")
-                    sys.stdout.flush()
+                    print("ignored: " + dir_name, file=self.logfile)
+                    self.logfile.flush()
                     break
                 if self.start and os.path.isdir(self.file_path):
                     newalbuminfo = pathlib.Path(os.path.join(self.file_path, "AlbumInfo.txt"))
@@ -358,15 +358,21 @@ class Indexer(object):
                 if not os.path.exists(mdir):
                     print(f"Warning: Media directory {mdir} does not exist", file=self.logfile)
                     continue
-                print(f"Processing directory: {mdir}",file=self.logfile)
+                print(f"Processing directory: {mdir}", file=self.logfile)
                 self.walk(mdir, None)
 
-            print("Indexing completed successfully",file=self.logfile)
-            self.con.commit()
-            self.con.close()
-            print("Database connection closed",file=self.logfile)
+            print("Indexing completed successfully", file=self.logfile)
         except Exception as e:
-            print(f"Error during indexing: {e}",file=self.logfile)
+            print(f"Error during indexing: {e}", file=self.logfile)
+        finally:
+            if self.con is not None:
+                try:
+                    self.con.commit()
+                    self.con.close()
+                    print("Database connection closed", file=self.logfile)
+                except Exception as e:
+                    print(f"Error while closing database connection: {e}", file=self.logfile)
+            self.logfile.close()
 
     def parsealbuminfo(self, albuminfo_path):
         """
