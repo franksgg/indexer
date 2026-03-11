@@ -1,0 +1,43 @@
+services:
+
+  firebird:
+    image: firebirdsql/firebird
+    restart: always
+    environment:
+      - FIREBIRD_ROOT_PASSWORD=masterkey
+      - FIREBIRD_USER=shiva
+      - FIREBIRD_PASSWORD=shiva
+      - FIREBIRD_DATABASE=iceshake.fdb
+      - FIREBIRD_DATABASE_DEFAULT_CHARSET=UTF8
+      ##- FIREBIRD_CONF_DataTypeCompatibility=3.0
+    volumes:
+      - ./data:/var/lib/firebird/data
+      - ./ddl:/docker-entrypoint-initdb.d/
+      - opt-volume:/opt
+    networks:
+      new:
+        aliases:
+          - fb
+    ports:
+      - "3050:3050"
+  python:
+    build:
+      context: ../
+      dockerfile: dockerfile-python
+      args:
+        - NODE_ENV=local
+    volumes:
+        - opt-volume:/opt:ro
+        - /var/data/music/:/var/data/music:ro
+    networks:
+      new:
+        aliases:
+          - pnw
+volumes:   # add this section
+  opt-volume:    # does not need anything underneath this
+networks:
+  new:
+
+
+
+

@@ -1,0 +1,31 @@
+[Connection]
+;firebird connection string
+host: fb
+;firebird database name
+database: /var/lib/firebird/data/iceshake.fdb
+;firebird user
+user: shiva
+;firebird password
+password: shiva
+;firebird library name (for linux)
+fb_library_name: /opt/firebird/lib/libfbclient.so.2
+;firebird library name (for windows)
+fb_library_name_w32: C:\Program Files\Firebird\Firebird_4_0\fbclient.dll
+
+[Indexer]
+;root directory of the music library
+basedir=/var/data/music/
+;directory to scan
+dir: alben
+;directory to start scanning from (may be a subdirectory of dir above or empty)
+startdir:
+;discogs api key
+discogs: your discogs token
+;lastfm api key
+LASTFM_API_KEY: your lastfm api key
+;comma separated list of file extensions to index 1=flac,2=mp3,3=m4a,4=ogg,5=wma,6=wav
+formats: "flac","mp3","m4a"
+;rescan all files
+fullscan: True
+;delete missing files from index
+cleanup: False
