@@ -178,7 +178,7 @@ process_sql() {
 		isql_command+=( "$FIREBIRD_DATABASE" )
 	fi
 
-    ${isql_command[@]} "$@"
+    "${isql_command[@]}" "$@"
 }
 
 # Execute database initialization scripts
@@ -242,7 +242,7 @@ create_db() {
                 $page_size
                 $default_charset;
             EXIT;
-            EOL
+EOL
 
             init_db /docker-entrypoint-initdb.d/*
         fi

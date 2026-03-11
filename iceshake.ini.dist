@@ -21,8 +21,6 @@ dir: alben
 startdir:
 ;discogs api key
 discogs: your discogs token
-;lastfm api key
-LASTFM_API_KEY: your lastfm api key
 ;comma separated list of file extensions to index 1=flac,2=mp3,3=m4a,4=ogg,5=wma,6=wav
 formats: "flac","mp3","m4a"
 ;rescan all files
