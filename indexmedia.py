@@ -117,7 +117,9 @@ class Indexer(object):
             self.logfilename=config.get("Indexer","logfile")
             self.logfile = open(self.logfilename, 'w')
             print("Starting indexer", file=self.logfile)
+            self.logfile.flush()
             print("Connecting to database", file=self.logfile)
+            self.logfile.flush()
             connection = connector.Connector()
             self.con = connection.getconnection()
             self._cur = self.con.cursor()
@@ -147,9 +149,11 @@ class Indexer(object):
             # Validate configuration
             if len(self.media_dirs) == 0:
                 print("Remember to set the MEDIA_DIRS option, otherwise I don't know where to look for.", file=self.logfile)
+                self.logfile.flush()
 
         except Exception as e:
             print(f"Error during initialization: {e}", file=self.logfile)
+            self.logfile.flush()
             # Ensure we have default values even if configuration fails
             if not self.media_dirs:
                 self.media_dirs = ()
@@ -208,6 +212,7 @@ class Indexer(object):
                                 return None
                 except Exception as e:
                     print(f"Error getting discogs info: {e}", file=self.logfile)
+                    self.logfile.flush()
         self._discogs_cache[cache_key] = None
         return None
 
@@ -266,10 +271,13 @@ class Indexer(object):
 
         if "." not in self.file_path:
             return False
-
+        print("checking: " + self.file_path, file=self.logfile)
+        self.logfile.flush()
         ext = self.file_path[self.file_path.rfind(".") + 1:]
         # print(ext, self.formats)
         if ext not in self.formats:
+            print("invalid format: " + ext, file=self.logfile)
+            self.logfile.flush()
             return False
 
         return True
@@ -330,6 +338,7 @@ class Indexer(object):
 
         def delentry(fname, row_id):
             print('deleting ', row_id, fname, file=self.logfile)
+            self.logfile.flush()
             delstmt = 'delete from tracks where id=%s' % (row_id)
             self._cur.execute(delstmt)
 
@@ -349,7 +358,9 @@ class Indexer(object):
 
         self.con.commit()
         print(c, file=self.logfile)
+        self.logfile.flush()
         print('ok', file=self.logfile)
+        self.logfile.flush()
 
     def run(self):
         """Main method to index media files and optionally retrieve missing images."""
@@ -362,6 +373,7 @@ class Indexer(object):
                     print(f"Warning: Media directory {mdir} does not exist", file=self.logfile)
                     continue
                 print(f"Processing directory: {mdir}", file=self.logfile)
+                self.logfile.flush()
                 self.walk(mdir, None)
 
             print("Indexing completed successfully", file=self.logfile)
