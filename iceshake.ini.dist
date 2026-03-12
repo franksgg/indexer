@@ -14,6 +14,7 @@ fb_library_name: /opt/firebird/lib/libfbclient.so.2
 fb_library_name_w32: C:\Program Files\Firebird\Firebird_4_0\fbclient.dll
 
 [Indexer]
+logfile=/var/lib/firebird/data/indexer.log
 ;root directory of the music library
 basedir=/var/data/music/
 ;directory to scan

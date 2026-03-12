@@ -80,8 +80,8 @@ class Indexer(object):
     def __init__(self):
         """Initialize the Indexer with configuration and connections."""
         # Initialize internal state
-        self.logfile = open('indexer.log', 'a')
-        print("Starting indexer", file=self.logfile)
+        self.logfilename = ""
+        self.logfile=None
         self.session = requests.Session()
         self.discogsinfo = self.discogsinfo()
         self.session.mount("file://", FileAdapter())
@@ -110,10 +110,13 @@ class Indexer(object):
         config_files = ["/etc/iceshake/iceshake.ini", "iceshake.ini", "../iceshake.ini"]
         found_files = config.read(config_files)
         if not found_files:
-            print(f"Warning: None of the config files {config_files} were found.", file=self.logfile)
+            print(f"Warning: None of the config files {config_files} were found.")
 
         try:
             # Set up database connections
+            self.logfilename=config.get("Indexer","logfile")
+            self.logfile = open(self.logfilename, 'w')
+            print("Starting indexer", file=self.logfile)
             print("Connecting to database", file=self.logfile)
             connection = connector.Connector()
             self.con = connection.getconnection()

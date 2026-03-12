@@ -23,8 +23,9 @@ services:
       args:
         - NODE_ENV=local
     volumes:
-        - opt-volume:/opt:ro
-        - /var/data/music/:/var/data/music:ro
+      - ./data:/var/lib/firebird/data
+      - opt-volume:/opt:ro
+      - /var/data/music/:/var/data/music:ro
 
 volumes:   # add this section
   opt-volume:    # does not need anything underneath this
