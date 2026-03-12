@@ -3,10 +3,8 @@ import binascii
 import os
 import pathlib
 import re
-import sys
 import traceback
 from configparser import ConfigParser
-
 from io import BytesIO
 from typing import Optional
 
@@ -382,6 +380,9 @@ class Indexer(object):
         finally:
             if self.con is not None:
                 try:
+                    if self._cur is not None:
+                        self._cur.callproc("MKPL")
+                    self.con.commit()
                     self.con.commit()
                     self.con.close()
                     print("Database connection closed", file=self.logfile)
