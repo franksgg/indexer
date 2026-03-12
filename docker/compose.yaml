@@ -14,12 +14,8 @@ services:
       - ./data:/var/lib/firebird/data
       - ./ddl:/docker-entrypoint-initdb.d/
       - opt-volume:/opt
-    networks:
-      new:
-        aliases:
-          - fb
     ports:
-      - "30050:30050"
+      - "30050:3050"
   python:
     build:
       context: ../
@@ -29,15 +25,9 @@ services:
     volumes:
         - opt-volume:/opt:ro
         - /var/data/music/:/var/data/music:ro
-    networks:
-      new:
-        aliases:
-          - pnw
+
 volumes:   # add this section
   opt-volume:    # does not need anything underneath this
-networks:
-  new:
-
 
 
 
