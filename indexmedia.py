@@ -889,4 +889,4 @@ if __name__ == '__main__':
     # print(lola.get_discogs_image('ZZ Top'))
     # print(p)
     lola.logfile.flush()
-    lola.findmissing()  # lola.run()
+    lola.run()
