@@ -1,9 +1,9 @@
 [Connection]
 ;firebird connection string
-host: fb
-port: 30050
+host: 192.168.178.201
+port: 3050
 ;firebird database name
-database: /var/lib/firebird/data/iceshake.fdb
+database: /var/data/iceshake.fdb
 ;firebird user
 user: shiva
 ;firebird password
@@ -17,10 +17,8 @@ fb_library_name_w32: C:\Program Files\Firebird\Firebird_4_0\fbclient.dll
 logfile=/var/lib/firebird/data/indexer.log
 ;root directory of the music library
 basedir=/var/data/music/
-;directory to scan
-dir: alben
-;directory to start scanning from (may be a subdirectory of dir above or empty)
-startdir:
+;directories to scan
+dirs: alben/Sarah Vaughan
 ;discogs api key
 discogs: your discogs token
 ;comma separated list of file extensions to index 1=flac,2=mp3,3=m4a,4=ogg,5=wma,6=wav
