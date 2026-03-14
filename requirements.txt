@@ -4,6 +4,7 @@ Pillow~=12.1.1
 urllib3~=2.6.3
 fdb~=2.0.4
 pip~=24.3.1
+python3-discogs-client~=2.5
 audiodb~=1.0.0
 certifi~=2026.2.25
 mutagen~=1.47.0
