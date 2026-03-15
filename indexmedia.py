@@ -113,7 +113,7 @@ class Indexer(object):
 
         # Load configuration
         config = ConfigParser()
-        config_files = ["/etc/iceshake/iceshake.ini", "iceshake.ini", "../iceshake.ini"]
+        config_files = [ "/var/lib/firebird/data/","/etc/iceshake/iceshake.ini", "iceshake.ini", "../iceshake.ini"]
         found_files = config.read(config_files)
         if not found_files:
             print(f"Warning: None of the config files {config_files} were found.")

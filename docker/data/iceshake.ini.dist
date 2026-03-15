@@ -1,9 +1,9 @@
 [Connection]
 ;firebird connection string
-host: 192.168.178.201
+host: firebird
 port: 3050
 ;firebird database name
-database: /var/data/iceshake.fdb
+database: /var/lib/firebird/data/iceshake.fdb
 ;firebird user
 user: shiva
 ;firebird password

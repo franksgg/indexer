@@ -8,6 +8,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN apt update
 RUN apt install libtommath1
 COPY ./*.py .
-COPY ./iceshake.ini .
+
 #CMD [ "sleep", "infinity" ]
 CMD [ "python", "indexmedia.py" ]
