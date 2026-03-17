@@ -179,6 +179,11 @@ RETURNS D_FK
 AS 
 BEGIN END ^
 
+CREATE OR ALTER FUNCTION DAYNAME
+RETURNS CHAR(2)
+AS
+begin end ^
+
 SET TERM ; ^
 COMMIT WORK;
 SET AUTODDL ON;
@@ -450,6 +455,24 @@ declare variable a d_fk;
       return (select pl.fk_track  from pl where pl.id =:a);
 
   end ^
+ALTER FUNCTION DAYNAME
+RETURNS CHAR(2)
+AS
+begin
+  return
+    CASE extract(WEEKDAY from current_timestamp)
+      WHEN 0 THEN 'So'
+      when 1 then 'Mo'
+      WHEN 2 THEN 'Di'
+      when 3 then 'Mi'
+      WHEN 4 THEN 'Do'
+      when 5 then 'Fr'
+      WHEN 6 THEN 'Sa'
+
+end;
+end^
+
+
 
 SET TERM ; ^
 COMMIT WORK;
@@ -1020,5 +1043,18 @@ INSERT INTO RADIOS (
 	1,
 	'default'
 );
+
+INSERT INTO IUSERS (
+	ID,
+	NAME,
+	PASSWORD,
+	IADMIN
+) VALUES (
+	1,
+	'shiva',
+	'shiva',
+	1
+);
+
 
 commit work;

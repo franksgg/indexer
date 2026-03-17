@@ -1,4 +1,5 @@
 import configparser
+import os
 import sys
 import time
 import fdb
@@ -59,7 +60,7 @@ class Connector:
     they are reopened if closed.
     """
     # timing
-    def __init__(self, inifile='iceshake.ini'):
+    def __init__(self, inifiles=['iceshake.ini']):
         """
         Initialize the Connector with database connection settings from an INI file.
 
@@ -73,9 +74,12 @@ class Connector:
             user, and password settings.
         """
         config = configparser.ConfigParser()
-        config_files = ['/etc/iceshake/' + inifile, inifile, '../' + inifile]
+        config_files = inifiles
+        print(f"Searching: config files {config_files} ")
+        p=os.getcwd()
+        print(p)
         found_files = config.read(config_files)
-
+        print(f"Found config files: {found_files}")
         if not found_files:
             print(f"Warning: None of the config files {config_files} were found.")
 
@@ -93,7 +97,7 @@ class Connector:
         try:
             counter = 0
             while not check_server(self.host, self.port) and not counter> 120:
-                print("Waiting for primary database to start...")
+                print(f"Waiting for primary database on {self.host}:{self.port} to start...")
                 counter += 1
                 time.sleep(10)
             self.con = fdb.connect(host=self.host, port=self.port, database=self.database, user=self.user, password=self.password,

@@ -3,6 +3,7 @@ import binascii
 import os
 import pathlib
 import re
+import sys
 import traceback
 import xml.etree.ElementTree as ET
 from configparser import ConfigParser
@@ -19,7 +20,12 @@ from discogs_client.models import MixedPaginatedList
 from requests.adapters import HTTPAdapter
 from urllib3.response import HTTPResponse
 
-import connector
+try:
+  import connector
+except ImportError:
+    print(f"connector not found in {sys.path}, trying to import from indexer")
+    from indexer import connector
+
 from tools import normalize_name
 
 
@@ -113,20 +119,26 @@ class Indexer(object):
 
         # Load configuration
         config = ConfigParser()
-        config_files = [ "/var/lib/firebird/data/","/etc/iceshake/iceshake.ini", "iceshake.ini", "../iceshake.ini"]
+        config_files = [ "/var/lib/firebird/data/iceshake.ini","/etc/iceshake/iceshake.ini", "iceshake.ini", "../iceshake.ini"]
+        print(f"Loading configuration from {config_files}")
         found_files = config.read(config_files)
         if not found_files:
             print(f"Warning: None of the config files {config_files} were found.")
 
         try:
             # Set up database connections
-            self.logfilename = config.get("Indexer", "logfile")
-            self.logfile = open(self.logfilename, 'w')
+            try:
+                self.logfilename = config.get("Indexer", "logfile")
+                self.logfile = open(self.logfilename, 'w')
+            except Exception as e:
+                print(f"Failed to open log file: {e}")
+                self.logfile = sys.stdout
+
             print("Starting indexer", file=self.logfile)
             self.logfile.flush()
             print("Connecting to database", file=self.logfile)
             self.logfile.flush()
-            connection = connector.Connector()
+            connection = connector.Connector(found_files)
             self.con = connection.getconnection()
             self._cur = self.con.cursor()
             discogs_key = config.get("Indexer", "discogs")
