@@ -1,4 +1,16 @@
 import re
+from configparser import ConfigParser
+
+
+try:
+  import connector
+except ImportError:
+    #print(f"connector not found in {sys.path}, trying to import from indexer")
+    from indexer import connector
+
+
+
+
 
 class switch(object):
     def __init__(self, value):
@@ -77,6 +89,20 @@ def normalize_name(name: str, istitle: bool=False):
     name = re.sub(r'\s+', ' ', name).strip(' -_').strip()
 
     return name
+
+def get_config():
+    """Create and return a ConfigParser instance with standard config files."""
+    config = ConfigParser()
+    #config_files = ["/var/lib/firebird/data/iceshake.ini", "/etc/iceshake/iceshake.ini", "iceshake.ini", "../iceshake.ini", "indexer/docker/data/debug.ini"]
+    #config_files = [ "/opt/web/jb/jb/indexer/docker/data/iceshake.ini"]
+    config_files = ["/var/lib/firebird/data/iceshake.ini"]
+
+    config.read(config_files)
+    return config
+
+def get_connector():
+    return connector.Connector()
+
 
 if __name__ == '__main__':
     print(normalize_name('150'))

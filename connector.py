@@ -1,9 +1,13 @@
-import configparser
 import os
 import sys
 import time
 import fdb
 from fdb import ISOLATION_LEVEL_READ_COMMITED_LEGACY
+
+try:
+    import tools
+except ImportError:
+    from indexer import tools
 
 
 def timing(f):
@@ -60,7 +64,7 @@ class Connector:
     they are reopened if closed.
     """
     # timing
-    def __init__(self, inifiles=['iceshake.ini']):
+    def __init__(self):
         """
         Initialize the Connector with database connection settings from an INI file.
 
@@ -73,15 +77,8 @@ class Connector:
             'Connection2' and 'Connection3', each with host, database, fb_library_name,
             user, and password settings.
         """
-        config = configparser.ConfigParser()
-        config_files = inifiles
-        print(f"Searching: config files {config_files} ")
-        p=os.getcwd()
-        print(p)
-        found_files = config.read(config_files)
-        print(f"Found config files: {found_files}")
-        if not found_files:
-            print(f"Warning: None of the config files {config_files} were found.")
+
+        config = tools.get_config()
 
         # Primary connection settings
         self.host = config.get('Connection', 'host')

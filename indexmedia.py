@@ -6,7 +6,6 @@ import re
 import sys
 import traceback
 import xml.etree.ElementTree as ET
-from configparser import ConfigParser
 from io import BytesIO
 from typing import Optional
 
@@ -19,14 +18,17 @@ from audiodb import search_artist_by_id
 from discogs_client.models import MixedPaginatedList
 from requests.adapters import HTTPAdapter
 from urllib3.response import HTTPResponse
-
+try:
+    import  tools 
+except ImportError:
+    from indexer import   tools
 try:
   import connector
 except ImportError:
-    print(f"connector not found in {sys.path}, trying to import from indexer")
+    #print(f"connector not found in {sys.path}, trying to import from indexer")
     from indexer import connector
 
-from tools import normalize_name
+
 
 
 class FileAdapter(HTTPAdapter):
@@ -42,6 +44,7 @@ def toSigned32(n):
 
 def fbcrc32(blob):
     return toSigned32(int(binascii.hexlify(bytearray.fromhex(binascii.crc32(blob).to_bytes(4, "big").hex())[::-1]), 16))
+
 
 
 class Indexer(object):
@@ -118,12 +121,7 @@ class Indexer(object):
         self._cur = None
 
         # Load configuration
-        config = ConfigParser()
-        config_files = [ "/var/lib/firebird/data/iceshake.ini","/etc/iceshake/iceshake.ini", "iceshake.ini", "../iceshake.ini"]
-        print(f"Loading configuration from {config_files}")
-        found_files = config.read(config_files)
-        if not found_files:
-            print(f"Warning: None of the config files {config_files} were found.")
+        config = tools.get_config()
 
         try:
             # Set up database connections
@@ -131,19 +129,20 @@ class Indexer(object):
                 self.logfilename = config.get("Indexer", "logfile")
                 self.logfile = open(self.logfilename, 'w')
             except Exception as e:
-                print(f"Failed to open log file: {e}")
+                #print(f"Failed to open log file: {e}")
                 self.logfile = sys.stdout
 
             print("Starting indexer", file=self.logfile)
             self.logfile.flush()
-            print("Connecting to database", file=self.logfile)
-            self.logfile.flush()
-            connection = connector.Connector(found_files)
+
+            connection = tools.get_connector()
             self.con = connection.getconnection()
+            print(f"Connecting to database: {self.con.database_name}")
+            self.logfile.flush()
             self._cur = self.con.cursor()
             discogs_key = config.get("Indexer", "discogs")
             self.discogsclient = discogs_client.Client('indexmedia/0.1', user_token=discogs_key)
-            musicbrainzngs.set_useragent('indexmedia', "0.1", "fsg@users.sf.net")
+            musicbrainzngs.set_useragent('indexmedia', "0.1", "fsg@us#ers.sf.net")
             formats_value = config.get("Indexer", "formats")
             self.formats = tuple(
                 fmt.strip().lower().lstrip(".") for fmt in formats_value.split(",") if fmt.strip()) or self.formats
@@ -251,20 +250,20 @@ class Indexer(object):
             return None
 
         if not album:
-            results = self.discogsclient.search(normalize_name(artist), track=normalize_name(title, True),
+            results = self.discogsclient.search(tools.normalize_name(artist), track=tools.normalize_name(title, True),
                                                 type='release')
         else:
-            results = self.discogsclient.search(artist=normalize_name(artist), track=normalize_name(title, True),
-                                                title=normalize_name(album, True), type='release')
+            results = self.discogsclient.search(artist=tools.normalize_name(artist), track=tools.normalize_name(title, True),
+                                                title=tools.normalize_name(album, True), type='release')
             if results.count == 0:
-                results = self.discogsclient.search(artist=normalize_name(artist), title=normalize_name(album),
+                results = self.discogsclient.search(artist=tools.normalize_name(artist), title=tools.normalize_name(album),
                                                     type='release')
             if results.count == 0:
-                results = self.discogsclient.search(track=normalize_name(title), title=normalize_name(album),
+                results = self.discogsclient.search(track=tools.normalize_name(title), title=tools.normalize_name(album),
                                                     type='release')
 
                 if results.count == 0:
-                    results = self.discogsclient.search(artist=normalize_name(artist), track=normalize_name(title),
+                    results = self.discogsclient.search(artist=tools.normalize_name(artist), track=tools.normalize_name(title),
                                                         type='release')
 
         return results if results.count > 0 else None
@@ -513,7 +512,7 @@ class Indexer(object):
 
     def filltrack(self, track, tinfo):
 
-        track.TITLE = normalize_name(tinfo.title[:128], True)
+        track.TITLE = tools.normalize_name(tinfo.title[:128], True)
         track.BITRATE = tinfo.bitrate
         track.FILE_SIZE = tinfo.filesize
         track.LEN = tinfo.length
@@ -552,8 +551,8 @@ class Indexer(object):
             album.PYEAR = tinfo.year
         if album.ARTIST is None:
             album.ARTIST = tinfo.albumartist
-        album.NAME = normalize_name(album.NAME)
-        album.ARTIST = normalize_name(album.ARTIST)
+        album.NAME = tools.normalize_name(album.NAME)
+        album.ARTIST = tools.normalize_name(album.ARTIST)
 
         cache_key = (album.NAME, album.ARTIST)
         if cache_key in self._album_cache:
@@ -586,7 +585,7 @@ class Indexer(object):
 
         if artist.NAME is None:
             artist.NAME = 'unknown'
-        artist.NAME = normalize_name(artist.NAME)
+        artist.NAME = tools.normalize_name(artist.NAME)
 
         if artist.NAME in self._artist_cache:
             artist.ID = self._artist_cache[artist.NAME]
@@ -852,7 +851,7 @@ class Indexer(object):
         for row in tracks_to_check:
             filename = row[1]
             row_id = row[0]
-
+            print(f'Checking {filename}')
             if not os.path.exists(filename) or check_ignore(filename):
                 delentry(filename, row_id)
             else:
@@ -868,8 +867,12 @@ class Indexer(object):
         """Main method to index media files and optionally retrieve missing images."""
         try:
             if self.clean:
+                print('Cleaning up', file=self.logfile)
+                self.logfile.flush()
                 self.cleanup()
             # Process all media directories
+            print('Processing', file=self.logfile)
+            self.logfile.flush()
             for mdir in self.media_dirs:
                 if not os.path.exists(mdir):
                     print(f"Warning: Media directory {mdir} does not exist", file=self.logfile)
