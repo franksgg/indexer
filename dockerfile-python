@@ -18,6 +18,10 @@ FROM python:3.13-trixie
 
 # File Author / Maintainer
 LABEL image.author="frank@schlottmann-goedde.de"
+ARG USERNAME=shiva
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+ARG USER_PW=shiva
 
 RUN apt-get update && apt-get -y upgrade && apt-get install -y sudo \
     psmisc libmp3lame-dev libflac-dev libxml2-dev \
@@ -26,15 +30,22 @@ RUN apt-get update && apt-get -y upgrade && apt-get install -y sudo \
     && apt-get clean \
     && apt-get autoremove \
     && rm -rf /var/lib/apt/lists/*
-WORKDIR /usr/src/app
+
+RUN useradd --create-home --shell /bin/bash  $USERNAME  && \
+    mkdir -p /home/$USERNAME/app && \
+    chown $USERNAME:$USERNAME /home/$USERNAME/app && \
+    echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME   &&\
+    chmod 0440 /etc/sudoers.d/$USERNAME
 
 
+WORKDIR /home/$USERNAME/app
+USER $USERNAME
 COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
-RUN apt update
-RUN apt install libtommath1
+#USER $USERNAME
 COPY ./*.py .
-COPY --from=build /ices0/build/src/ices .
+COPY --from=build --chown=shiva:shiva /ices0/build/src/ices .
+RUN sudo chown $USERNAME:$USERNAME *.*
 #CMD [ "sleep", "infinity" ]
 CMD [ "python", "indexmedia.py" ]
