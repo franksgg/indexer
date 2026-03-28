@@ -95,7 +95,7 @@ def get_config():
     config = ConfigParser()
     #config_files = ["/var/lib/firebird/data/iceshake.ini", "/etc/iceshake/iceshake.ini", "iceshake.ini", "../iceshake.ini", "indexer/docker/data/debug.ini"]
     #config_files = [ "/opt/web/jb/jb/indexer/docker/data/iceshake.ini"]
-    config_files = ["/var/lib/firebird/data/iceshake.ini"]
+    config_files = ["/var/lib/firebird/data/iceshake.ini","data/iceshake.ini.local"]
 
     config.read(config_files)
     return config
