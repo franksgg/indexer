@@ -31,7 +31,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 #USER $USERNAME
 COPY ./*.py .
-COPY --from=build --chown=shiva:shiva /ices0/build/src/ices .
 RUN sudo chown $USERNAME:$USERNAME *.*
 #CMD [ "sleep", "infinity" ]
 CMD [ "python", "indexmedia.py" ]
