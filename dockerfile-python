@@ -5,9 +5,7 @@ FROM python:3.13-trixie
 # File Author / Maintainer
 LABEL image.author="frank@schlottmann-goedde.de"
 ARG USERNAME=shiva
-ARG USER_UID=1000
-ARG USER_GID=$USER_UID
-ARG USER_PW=shiva
+
 
 RUN apt-get update && apt-get -y upgrade && apt-get install -y sudo \
     psmisc libmp3lame-dev libflac-dev libxml2-dev \

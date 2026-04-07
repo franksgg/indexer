@@ -1,3 +1,4 @@
+import os
 import re
 from configparser import ConfigParser
 
@@ -91,13 +92,43 @@ def normalize_name(name: str, istitle: bool=False):
     return name
 
 def get_config():
-    """Create and return a ConfigParser instance with standard config files."""
+    """Create and return a ConfigParser instance with standard config files and env var overrides."""
     config = ConfigParser()
-    #config_files = ["/var/lib/firebird/data/iceshake.ini", "/etc/iceshake/iceshake.ini", "iceshake.ini", "../iceshake.ini", "indexer/docker/data/debug.ini"]
-    #config_files = [ "/opt/web/jb/jb/indexer/docker/data/iceshake.ini"]
-    config_files = ["/var/lib/firebird/data/iceshake.ini","../data/iceshake.ini.local"]
+    config_files = ["/var/lib/firebird/data/iceshake.ini", "../data/iceshake.ini.local"]
 
     config.read(config_files)
+
+    # Ensure sections exist
+    for section in ['Connection', 'Indexer', 'server']:
+        if not config.has_section(section):
+            config.add_section(section)
+
+    # Env var overrides for [Connection]
+    if os.getenv('FIREBIRD_USER'):
+        config.set('Connection', 'user', os.getenv('FIREBIRD_USER'))
+    if os.getenv('FIREBIRD_PASSWORD'):
+        config.set('Connection', 'password', os.getenv('FIREBIRD_PASSWORD'))
+    if os.getenv('FIREBIRD_HOST'):
+        config.set('Connection', 'host', os.getenv('FIREBIRD_HOST'))
+    if os.getenv('FIREBIRD_PORT'):
+        config.set('Connection', 'port', os.getenv('FIREBIRD_PORT'))
+    if os.getenv('FIREBIRD_DATABASE'):
+        db = os.getenv('FIREBIRD_DATABASE')
+        # If it's just a filename, assume the standard Firebird path in the container
+        if not db.startswith('/') and not (len(db) > 1 and db[1] == ':'):
+            db = f"/var/lib/firebird/data/{db}"
+        config.set('Connection', 'database', db)
+
+    # Env var overrides for [Indexer]
+    if os.getenv('MUSIC_LIBRARY'):
+        config.set('Indexer', 'basedir', os.getenv('MUSIC_LIBRARY'))
+    if os.getenv('DISCOGS_API_KEY'):
+        config.set('Indexer', 'discogs', os.getenv('DISCOGS_API_KEY'))
+
+    # Env var overrides for [server]
+    if os.getenv('IC_ADMIN_PASSWORD'):
+        config.set('server', 'admin_password', os.getenv('IC_ADMIN_PASSWORD'))
+
     return config
 
 def get_connector():
