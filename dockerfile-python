@@ -10,7 +10,7 @@ ARG USERNAME=shiva
 RUN apt-get update && apt-get -y upgrade && apt-get install -y sudo \
     psmisc libmp3lame-dev libflac-dev libxml2-dev \
     libshout-dev libvorbis-dev libogg-dev libfaad-dev libpython3-dev libperl-dev \
-    libtommath1 \
+    libtommath1 gettext-base \
     && apt-get clean \
     && apt-get autoremove \
     && rm -rf /var/lib/apt/lists/*

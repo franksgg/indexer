@@ -141,7 +141,17 @@ class Indexer(object):
             self.logfile.flush()
             self._cur = self.con.cursor()
             discogs_key = config.get("Indexer", "discogs")
-            self.discogsclient = discogs_client.Client('indexmedia/0.1', user_token=discogs_key)
+            try:
+                self.discogsclient = discogs_client.Client('indexmedia/0.1', user_token=discogs_key)
+            except discogs_client.exceptions.HTTPError as e:
+                print(f"Failed to initialize Discogs client: {e}", file=self.logfile)
+                self.logfile.flush()
+                self.discogsclient = None
+            except Exception as e:
+                print(f"Unexpected error initializing Discogs client: {e}", file=self.logfile)
+                self.logfile.flush()
+                self.discogsclient = None
+
             musicbrainzngs.set_useragent('indexmedia', "0.1", "fsg@us#ers.sf.net")
             formats_value = config.get("Indexer", "formats")
             self.formats = tuple(

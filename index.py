@@ -13,7 +13,7 @@ def ices_init():
     return 1
 
 
-# Function called to shut down your python enviroment.
+# Function called to shut down your python environment.
 # Return 1 if ok, 0 if something went wrong.
 def ices_shutdown():
     print('Executing shutdown() function...')
@@ -23,8 +23,8 @@ def ices_shutdown():
 # Function called to get the next filename to stream.
 # Should return a string.
 def ices_get_next():
-    connection = tools.get_connector()
-    dcon = connection.getconnection()
+    conn = tools.get_connector()
+    dcon = conn.getconnection()
     with TransactionContext(dcon.trans()) as tr:
         cure = tr.cursor()
         cure.execute('select nextpause() from actpos')
@@ -38,11 +38,11 @@ def mkmeta(song, encoding='ascii'):
 
 
 # This function, if defined, returns the string you'd like used
-# as metadata (ie for title streaming) for the current song. You may
+# as metadata (i.e., for title streaming) for the current song. You may
 # return null to indicate that the file comment should be used.
 def ices_get_metadata():
-    connection = tools.get_connector()
-    dcon = connection.getconnection()
+    conn = tools.get_connector()
+    dcon = conn.getconnection()
     with TransactionContext(dcon.trans()) as tr:
         cure = tr.cursor()
         cure.execute('select actname() from actpos')
