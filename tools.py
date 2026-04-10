@@ -94,7 +94,7 @@ def normalize_name(name: str, istitle: bool=False):
 def get_config():
     """Create and return a ConfigParser instance with standard config files and env var overrides."""
     config = ConfigParser()
-    config_files = ["/var/lib/firebird/data/iceshake.ini", "../data/iceshake.ini.local"]
+    config_files = ["/var/lib/firebird/data/iceshake.ini", "../data/iceshake.ini"]
 
     config.read(config_files)
 
